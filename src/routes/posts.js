@@ -1,15 +1,185 @@
 const express = require("express");
 const router = express.Router();
+const supabase = require("../lib/supabase");
 
-// 임시 데이터 (나중에 Supabase로 교체)
-const posts = [
-  { id: 1, title: "첫번째 글", content: "내용1" },
-  { id: 2, title: "두번째 글", content: "내용2" },
-];
+// GET /api/posts?page=1&limit=10 : 포스트 목록 가져오기
+router.get("/", async (req, res) => {
+  // 쿼리 파라미터 파싱(기본값 설정)
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
 
-// GET /api/posts - 목록 조회
-router.get("/", (req, res) => {
-  res.json({ data: posts });
+  //기존 코드랑 동일하게
+  const from = (page - 1) * limit;
+  const to = page * limit - 1;
+
+  try {
+    const { data, error, count } = await supabase
+      .from("posts")
+      .select(
+        `
+        *,
+        users!id(user_id, nickname, email, profile_url)
+        `,
+        { count: "exact" }
+      )
+      .range(from, to)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "포스트 목록을 불러오는데 실패했습니다",
+        error: error.message,
+      });
+    }
+
+    const hasNext = to + 1 < (count || 0);
+
+    return res.status(200).json({
+      success: true,
+      data,
+      hasNext,
+      nextPage: page + 1,
+      count,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다.",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/posts/initial : 최신 포스트 5개 가져오기
+router.get("/initial", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .range(0, 4)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "최초 포스트 목록을 불러오는데 실패했습니다",
+        error: error.message,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/posts/123 : 포스트 1개 가져오기
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .select("title, content, image_urls")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "포스트를 불러오는데 실패했습니다",
+        error: error.message,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/posts
+router.post("/", async (req, res) => {
+  const { user_id, title, content, image_urls } = req.body;
+
+  if (!user_id || !title || !content) {
+    return res.status(400).json({
+      success: false,
+      message: "user_id, title, content는 필수입니다",
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("posts")
+      .insert({
+        user_id,
+        title,
+        content,
+        image_urls: image_urls || [],
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "포스트 등록에 실패했습니다",
+        error: error.message,
+      });
+    }
+    return res.status(201).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
+});
+
+// DELETE /api/posts
+router.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await supabase.from("posts").delete().eq("id", id);
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "포스트를 삭제하는데 실패했습니다",
+        error: error.message,
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
 });
 
 module.exports = router;
