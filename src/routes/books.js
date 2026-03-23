@@ -24,6 +24,13 @@ router.get("/", async (req, res) => {
       }
     );
 
+    if (!response.ok) {
+      return res.status(response.status).json({
+        success: false,
+        message: "네이버 API 오류",
+      });
+    }
+
     const data = await response.json();
     const hasNext = to < (data.total || 0);
 
@@ -36,7 +43,7 @@ router.get("/", async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "책 데이터를 가져오는데 실패했습니다",
+      message: "서버 오류가 발생했습니다",
       error: error.message,
     });
   }
