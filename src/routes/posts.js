@@ -82,14 +82,19 @@ router.get("/initial", async (req, res) => {
   }
 });
 
-// GET /api/posts/123 : 포스트 1개 가져오기
-router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+// GET /api/posts/:postId : 포스트 1개 가져오기
+router.get("/:postId", async (req, res) => {
+  const { postId } = req.params;
   try {
     const { data, error } = await supabase
       .from("posts")
-      .select("title, content, image_urls")
-      .eq("id", id)
+      .select(
+        `
+        *,
+        users!id(user_id, nickname, email, profile_url)
+        `
+      )
+      .eq("id", postId)
       .single();
 
     if (error) {
@@ -157,11 +162,15 @@ router.post("/", async (req, res) => {
   }
 });
 
-// DELETE /api/posts
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
+// DELETE /api/posts/:postId
+router.delete("/:postId", async (req, res) => {
+  const { postId } = req.params;
   try {
-    const { data, error } = await supabase.from("posts").delete().eq("id", id);
+    const { data, error } = await supabase
+      .from("posts")
+      .delete()
+      .eq("id", postId)
+      .select();
     if (error) {
       return res.status(500).json({
         success: false,
@@ -170,6 +179,92 @@ router.delete("/:id", async (req, res) => {
       });
     }
     return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
+});
+
+// GET /api/posts/:postId/comments
+router.get("/:postId/comments", async (req, res) => {
+  const { postId } = req.params;
+
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .select(
+        `
+        *,
+        users!id(user_id, nickname, email, profile_url)
+        `
+      )
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "댓글 목록을 불러오는데 실패했습니다",
+        error: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "서버 오류가 발생했습니다",
+      error: error.message,
+    });
+  }
+});
+
+// POST /api/posts/:postId/comments
+router.post("/:postId/comments", async (req, res) => {
+  const { postId } = req.params;
+  const { user_id, comment } = req.body;
+
+  if (!user_id || !comment) {
+    return res.status(400).json({
+      success: false,
+      message: "user_id와 comment는 필수입니다",
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        user_id,
+        post_id: postId,
+        comment,
+      })
+      .select(
+        `
+        *,
+        users!id(user_id, nickname, email, profile_url)
+        `
+      )
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        success: false,
+        message: "댓글 등록에 실패했습니다",
+        error: error.message,
+      });
+    }
+
+    return res.status(201).json({
       success: true,
       data,
     });
