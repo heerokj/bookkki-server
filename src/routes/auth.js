@@ -117,4 +117,10 @@ router.post("/login", async (req, res) => {
   });
 });
 
+// POST /api/auth/logout - 로그아웃
+router.post("/logout", async (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "로그아웃 성공!" });
+});
+
 module.exports = router;
