@@ -228,4 +228,100 @@ router.get("/kakao/callback", async (req, res) => {
   }
 });
 
+// GET /api/auth/naver - 네이버 인증 URL로 리다이렉트
+router.get("/naver", (req, res) => {
+  const state = Math.random().toString(36).substring(2); // CSRF 방어용 랜덤값
+  const naverAuthUrl = `https://nid.naver.com/oauth2.0/authorize?client_id=${process.env.NAVER_CLIENT_ID}&redirect_uri=${process.env.NAVER_REDIRECT_URI}&response_type=code&state=${state}`;
+  res.redirect(naverAuthUrl);
+});
+
+// GET /api/auth/naver/callback - 네이버 콜백
+router.get("/naver/callback", async (req, res) => {
+  const { code, state } = req.query;
+
+  if (!code) {
+    return res.status(400).json({ message: "네이버 인증 코드가 없어요" });
+  }
+
+  try {
+    // 1. code로 네이버 access_token 교환
+    const tokenResponse = await axios.get(
+      "https://nid.naver.com/oauth2.0/token",
+      {
+        params: {
+          grant_type: "authorization_code",
+          client_id: process.env.NAVER_CLIENT_ID,
+          client_secret: process.env.NAVER_CLIENT_SECRET,
+          redirect_uri: process.env.NAVER_REDIRECT_URI,
+          code,
+          state,
+        },
+      }
+    );
+
+    const naverAccessToken = tokenResponse.data.access_token;
+
+    // 2. 네이버 access_token으로 유저 정보 조회
+    const userResponse = await axios.get(
+      "https://openapi.naver.com/v1/nid/me",
+      {
+        headers: { Authorization: `Bearer ${naverAccessToken}` },
+      }
+    );
+
+    const naverUser = userResponse.data.response;
+    const naverId = naverUser.id;
+    const nickname = naverUser.nickname || null;
+    const profile_url = naverUser.profile_image || null;
+
+    // 3. Supabase에서 기존 유저 조회
+    const { data: existingUser } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_id", naverId)
+      .eq("provider", "naver")
+      .single();
+
+    let user = existingUser;
+
+    // 4. 없으면 새로 저장
+    if (!user) {
+      const { data: newUser, error } = await supabase
+        .from("users")
+        .insert({
+          user_id: naverId,
+          nickname,
+          profile_url,
+          provider: "naver",
+        })
+        .select()
+        .single();
+
+      if (error) return res.status(500).json({ message: error.message });
+      user = newUser;
+    }
+
+    // 5. 북끼 JWT 발급
+    const token = jwt.sign(
+      { id: user.id, user_id: user.user_id },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    // 6. 쿠키 저장 후 리다이렉트
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: "lax",
+    });
+
+    // 7. 로그인 성공 후 프론트 메인 페이지로 이동
+    res.redirect("http://localhost:4000" || "https://bookkki.vercel.app/");
+    // res.redirect("http://localhost:4000/api/hello"); 테스트용
+  } catch (error) {
+    console.error("네이버 로그인 오류:", error.message);
+    res.status(500).json({ message: "네이버 로그인에 실패했어요" });
+  }
+});
+
 module.exports = router;
