@@ -1,9 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../lib/supabase");
+const authMiddleware = require("../middleware/auth");
 
 // PATCH /api/comments/:commentId
-router.patch("/:commentId", async (req, res) => {
+router.patch("/:commentId", authMiddleware, async (req, res) => {
   const { commentId } = req.params;
   const { comment } = req.body;
 
@@ -49,7 +50,7 @@ router.patch("/:commentId", async (req, res) => {
 });
 
 // DELETE /api/comments/:commentId
-router.delete("/:commentId", async (req, res) => {
+router.delete("/:commentId", authMiddleware, async (req, res) => {
   const { commentId } = req.params;
   try {
     const { data, error } = await supabase

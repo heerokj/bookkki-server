@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const supabase = require("../lib/supabase");
+const authMiddleware = require("../middleware/auth");
 
 // GET /api/posts?page=1&limit=10 : 포스트 목록 가져오기
 router.get("/", async (req, res) => {
@@ -118,14 +119,15 @@ router.get("/:postId", async (req, res) => {
   }
 });
 
-// POST /api/posts
-router.post("/", async (req, res) => {
-  const { user_id, title, content, image_urls } = req.body;
+// POST /api/posts : 포스트 등록
+router.post("/", authMiddleware, async (req, res) => {
+  const { title, content, image_urls } = req.body;
+  const user_id = req.user.id;
 
-  if (!user_id || !title || !content) {
+  if (!title || !content) {
     return res.status(400).json({
       success: false,
-      message: "user_id, title, content는 필수입니다",
+      message: "title, content는 필수입니다",
     });
   }
 
@@ -162,8 +164,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// DELETE /api/posts/:postId
-router.delete("/:postId", async (req, res) => {
+// DELETE /api/posts/:postId : 포스터 삭제
+router.delete("/:postId", authMiddleware, async (req, res) => {
   const { postId } = req.params;
   try {
     const { data, error } = await supabase
@@ -191,7 +193,7 @@ router.delete("/:postId", async (req, res) => {
   }
 });
 
-// GET /api/posts/:postId/comments
+// GET /api/posts/:postId/comments : 댓글 조회
 router.get("/:postId/comments", async (req, res) => {
   const { postId } = req.params;
 
@@ -228,15 +230,16 @@ router.get("/:postId/comments", async (req, res) => {
   }
 });
 
-// POST /api/posts/:postId/comments
-router.post("/:postId/comments", async (req, res) => {
+// POST /api/posts/:postId/comments : 댓글 등록
+router.post("/:postId/comments", authMiddleware, async (req, res) => {
   const { postId } = req.params;
-  const { user_id, comment } = req.body;
+  const { comment } = req.body;
+  const user_id = req.user.id;
 
-  if (!user_id || !comment) {
+  if (!comment) {
     return res.status(400).json({
       success: false,
-      message: "user_id와 comment는 필수입니다",
+      message: "comment는 필수입니다",
     });
   }
 
