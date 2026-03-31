@@ -20,7 +20,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://bookkki.vercel.app", // 배포된 프론트 주소
+      "https://bookkki-client.vercel.app", // 배포된 프론트 주소
     ],
     credentials: true, // 쿠키 허용
   })
