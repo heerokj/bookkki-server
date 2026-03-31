@@ -248,11 +248,12 @@ router.get("/kakao/callback", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
     });
 
     // 7. 로그인 성공 후 프론트 메인 페이지로 이동
-    res.redirect("http://localhost:3000" || "https://bookkki.vercel.app/");
+    res.redirect(process.env.CLIENT_URL);
   } catch (error) {
     console.error("카카오 로그인 오류:", error.message);
     res.status(500).json({ message: "카카오 로그인에 실패했어요" });
@@ -343,12 +344,12 @@ router.get("/naver/callback", async (req, res) => {
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      sameSite: "lax",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
     });
 
     // 7. 로그인 성공 후 프론트 메인 페이지로 이동
-    res.redirect("http://localhost:3000" || "https://bookkki.vercel.app/");
-    // res.redirect("http://localhost:4000/api/hello"); 테스트용
+    res.redirect(process.env.CLIENT_URL);
   } catch (error) {
     console.error("네이버 로그인 오류:", error.message);
     res.status(500).json({ message: "네이버 로그인에 실패했어요" });
