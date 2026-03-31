@@ -105,7 +105,8 @@ router.post("/login", async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true, // JS에서 접근 불가 (XSS 방어)
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7일 (밀리초)
-    sameSite: "lax",
+    sameSite: "none", // lax → none 으로 변경
+    secure: true, // none 쓰려면 https 필수라 추가
   });
 
   res.json({
@@ -121,7 +122,10 @@ router.post("/login", async (req, res) => {
 
 // POST /api/auth/logout - 로그아웃
 router.post("/logout", async (req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", {
+    sameSite: "none",
+    secure: true,
+  });
   res.json({ message: "로그아웃 성공!" });
 });
 
