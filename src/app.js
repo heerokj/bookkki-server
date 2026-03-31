@@ -18,7 +18,10 @@ const logger = require("./middleware/logger");
 // 미들웨어
 app.use(
   cors({
-    origin: "http://localhost:3000" || "https://bookkki-client.vercel.app", // 프론트 주소 정확히 명시
+    origin: [
+      "http://localhost:3000",
+      "https://bookkki.vercel.app", // 배포된 프론트 주소
+    ],
     credentials: true, // 쿠키 허용
   })
 );
