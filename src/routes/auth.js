@@ -126,10 +126,37 @@ router.post("/logout", async (req, res) => {
 });
 
 // GET /api/auth/me - 내 정보 조회
-router.get("/me", authMiddleware, (req, res) => {
-  res.json({ data: req.user }); // req.user는 미들웨어가 세팅
-});
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, user_id, nickname, email, profile_url, provider, created_at")
+      .eq("id", req.user.id)
+      .single();
 
+    if (error) {
+      return res.status(500).json({
+        message: "사용자 정보를 불러오는데 실패했습니다.",
+        error: error.message,
+      });
+    }
+
+    if (!data) {
+      return res.status(404).json({
+        message: "사용자를 찾을 수 없습니다.",
+      });
+    }
+
+    return res.status(200).json({
+      data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "서버 오류가 발생했습니다.",
+      error: error.message,
+    });
+  }
+});
 // GET /api/auth/kakao - 카카오 인증 URL로 리다이렉트
 router.get("/kakao", (req, res) => {
   const kakaoAuthUrl = `https://kauth.kakao.com/oauth/authorize?client_id=${process.env.KAKAO_CLIENT_ID}&redirect_uri=${process.env.KAKAO_REDIRECT_URI}&response_type=code`;
