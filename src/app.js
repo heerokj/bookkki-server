@@ -16,7 +16,12 @@ const uploadsRouter = require("./routes/uploads");
 const logger = require("./middleware/logger");
 
 // 미들웨어
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:3000", // 프론트 주소 정확히 명시
+    credentials: true, // 쿠키 허용
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(logger); // 추가 (모든 요청에 적용)
