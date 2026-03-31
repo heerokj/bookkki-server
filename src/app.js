@@ -39,3 +39,5 @@ app.use("/api/uploads", uploadsRouter);
 if (process.env.NODE_ENV !== "production") {
   app.listen(4000, () => console.log("Server running on 4000"));
 }
+
+module.exports = app;
