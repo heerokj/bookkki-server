@@ -36,6 +36,6 @@ app.use("/api/cafes", cafesRouter);
 app.use("/api/uploads", uploadsRouter);
 
 // 서버 시작
-app.listen(PORT, () => {
-  console.log(`서버 실행중 → http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== "production") {
+  app.listen(4000, () => console.log("Server running on 4000"));
+}
