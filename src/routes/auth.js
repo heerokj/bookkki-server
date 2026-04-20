@@ -105,8 +105,8 @@ router.post("/login", async (req, res) => {
   res.cookie("token", token, {
     httpOnly: true, // JS에서 접근 불가 (XSS 방어)
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7일 (밀리초)
-    sameSite: "none", // lax → none 으로 변경
-    secure: true, // none 쓰려면 https 필수라 추가
+    sameSite: "none", // lax → none 으로 변경 (크로스 도메인 허용)
+    secure: true, // none 쓰려면 https 필수
   });
 
   res.json({

@@ -1,5 +1,16 @@
 const logger = (req, res, next) => {
+  const startedAt = Date.now();
+
   console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+
+  res.on("finish", () => {
+    console.log(
+      `[${new Date().toLocaleTimeString()}] ${req.method} ${req.url} ${
+        res.statusCode
+      } ${Date.now() - startedAt}ms`
+    );
+  });
+
   next(); // 반드시 호출! 안하면 요청이 여기서 멈춘다
 };
 

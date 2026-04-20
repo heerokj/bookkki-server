@@ -12,7 +12,6 @@ const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 const booksRouter = require("./routes/books");
 const cafesRouter = require("./routes/cafes");
-const uploadsRouter = require("./routes/uploads");
 const logger = require("./middleware/logger");
 
 // 미들웨어
@@ -36,7 +35,6 @@ app.use("/api/posts", postsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/books", booksRouter);
 app.use("/api/cafes", cafesRouter);
-app.use("/api/uploads", uploadsRouter);
 
 // 서버 시작
 if (process.env.NODE_ENV !== "production") {

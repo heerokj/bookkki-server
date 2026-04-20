@@ -123,6 +123,7 @@ router.get("/:postId", async (req, res) => {
 router.post("/", authMiddleware, async (req, res) => {
   const { title, content, image_urls } = req.body;
   const user_id = req.user.id;
+  const requestStartedAt = Date.now();
 
   if (!title || !content) {
     return res.status(400).json({
@@ -132,16 +133,18 @@ router.post("/", authMiddleware, async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
+    console.log(
+      `[posts] create start userId=${user_id} imageCount=${image_urls?.length || 0}`
+    );
+
+    const { error } = await supabase
       .from("posts")
       .insert({
         user_id,
         title,
         content,
         image_urls: image_urls || [],
-      })
-      .select()
-      .single();
+      });
 
     if (error) {
       return res.status(500).json({
@@ -150,9 +153,15 @@ router.post("/", authMiddleware, async (req, res) => {
         error: error.message,
       });
     }
+
+    console.log(
+      `[posts] create done userId=${user_id} imageCount=${
+        image_urls?.length || 0
+      } duration=${Date.now() - requestStartedAt}ms`
+    );
+
     return res.status(201).json({
       success: true,
-      data,
     });
   } catch (error) {
     console.error(error);
